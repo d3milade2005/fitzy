@@ -1,6 +1,11 @@
 package com.fashion_app.closet_api.controller;
 
+import com.fashion_app.closet_api.Entity.User;
+import com.fashion_app.closet_api.dto.UserLoginRequest;
+import com.fashion_app.closet_api.dto.UserRegisterRequest;
+import com.fashion_app.closet_api.service.UserService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,9 +21,12 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping("/register")
-    public ResponseEntity<String> register(@RequestBody UserRegisterRequest requestInput) {
+    public ResponseEntity<Map<String, Object>> register(@RequestBody UserRegisterRequest requestInput) {
         userService.signUp(requestInput);
-        return ResponseEntity.ok("User registered successfully");
+        Map<String, Object> response = Map.of(
+                "message", "User registered successfully"
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @PostMapping("/verify")
