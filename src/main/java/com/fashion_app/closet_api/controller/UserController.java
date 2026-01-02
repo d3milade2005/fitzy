@@ -1,9 +1,11 @@
 package com.fashion_app.closet_api.controller;
 
 import com.fashion_app.closet_api.Entity.User;
+import com.fashion_app.closet_api.dto.AuthenticationResponse;
 import com.fashion_app.closet_api.dto.UserLoginRequest;
 import com.fashion_app.closet_api.dto.UserRegisterRequest;
 import com.fashion_app.closet_api.service.UserService;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,7 +13,6 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
-import java.util.HashMap;
 import java.util.Map;
 
 @RestController
@@ -36,11 +37,8 @@ public class UserController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<Map<String, String>> login(@RequestBody UserLoginRequest requestInput) {
-        String token = userService.login(requestInput);
-        Map<String, String> response= new HashMap<>();
-        response.put("token", token);
-        return ResponseEntity.ok(response);
+    public ResponseEntity<AuthenticationResponse> login(@RequestBody UserLoginRequest requestInput) {
+        return ResponseEntity.ok(userService.login(requestInput));
     }
 
     @PostMapping("/resend")
@@ -54,5 +52,10 @@ public class UserController {
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         User currentUser = (User) authentication.getPrincipal();
         return ResponseEntity.ok(currentUser);
+    }
+
+    @PostMapping("/refresh-token")
+    public ResponseEntity<AuthenticationResponse> refreshToken(HttpServletRequest request) {
+        return ResponseEntity.ok(userService.refreshToken(request));
     }
 }

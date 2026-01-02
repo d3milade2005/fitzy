@@ -38,17 +38,29 @@ public class Oauth2SuccessHandler implements AuthenticationSuccessHandler {
                             AuthProvider.GOOGLE,
                             UserRole.USER
                     );
+                    registerNewUser.setEnabled(true);
                     return userRepository.save(registerNewUser);
                 });
 
-        String jwtToken = jwtService.generateToken(user);
+//        String jwtToken = jwtService.generateToken(user);
+//
+//        Cookie cookie = new Cookie("AUTH_TOKEN", jwtToken);
+//        cookie.setPath("/");
+//        cookie.setHttpOnly(true);
+//        cookie.setSecure(false);  // set to true in prod (requires HTTPS)
+//        cookie.setMaxAge(60 * 60);
+//        response.addCookie(cookie);
+//        response.sendRedirect("http://localhost:3000/dashboard");
 
-        Cookie cookie = new Cookie("AUTH_TOKEN", jwtToken);
-        cookie.setPath("/");
-        cookie.setHttpOnly(true);
-        cookie.setSecure(false);  // set to true in prod (requires HTTPS)
-        cookie.setMaxAge(60 * 60);
-        response.addCookie(cookie);
-        response.sendRedirect("http://localhost:3000/dashboard");
+        String accessToken = jwtService.generateToken(user);
+        String refreshToken = jwtService.generateRefreshToken(user);
+
+        String redirectUrl = String.format(
+                "http://localhost:3000/dashboard?access_token=%s&refresh_token=%s",
+                accessToken,
+                refreshToken
+        );
+
+        response.sendRedirect(redirectUrl);
     }
 }

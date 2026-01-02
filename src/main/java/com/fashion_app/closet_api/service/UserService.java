@@ -4,9 +4,15 @@ import com.fashion_app.closet_api.Entity.AuthProvider;
 import com.fashion_app.closet_api.Entity.User;
 import com.fashion_app.closet_api.Entity.UserRole;
 import com.fashion_app.closet_api.Repository.UserRepository;
+import com.fashion_app.closet_api.dto.AuthenticationResponse;
 import com.fashion_app.closet_api.dto.UserLoginRequest;
 import com.fashion_app.closet_api.dto.UserRegisterRequest;
+import com.fashion_app.closet_api.exception.BusinessException;
+import com.fashion_app.closet_api.exception.ErrorCode;
+import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -89,7 +95,7 @@ public class UserService {
         return String.valueOf(code);
     }
 
-    public String login(UserLoginRequest requestInput) {
+    public AuthenticationResponse login(UserLoginRequest requestInput) {
         User user = userRepository.findByEmail(requestInput.getEmail())
                 .orElseThrow(() -> new UsernameNotFoundException("User not found with email : " + requestInput.getEmail()));
         if (!user.isEnabled()){
@@ -98,12 +104,55 @@ public class UserService {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(requestInput.getEmail(), requestInput.getPassword())
         );
+        var accessToken = jwtService.generateToken(user);
+        var refreshToken = jwtService.generateRefreshToken(user);
 
-        return jwtService.generateToken(user);
+        return AuthenticationResponse.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .build();
     }
 
     public List<User> getAllUsers(){
         return userRepository.findAll();
+    }
+
+    public AuthenticationResponse refreshToken(HttpServletRequest request) {
+        final String authHeader = request.getHeader(HttpHeaders.AUTHORIZATION);
+        final String refreshToken;
+        final String userEmail;
+
+        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
+            throw new BusinessException(
+                    ErrorCode.INVALID_REQUEST,
+                    HttpStatus.BAD_REQUEST,
+                    "Refresh token is missing"
+            );
+        }
+
+        refreshToken = authHeader.substring(7);
+        userEmail = jwtService.extractUsername(refreshToken);
+
+        if (userEmail != null) {
+            var user = userRepository.findByEmail(userEmail)
+                    .orElseThrow(() -> new UsernameNotFoundException("User not found"));
+
+            if (jwtService.isTokenValid(refreshToken, user)) {
+                var accessToken = jwtService.generateToken(user);
+                var newRefreshToken = jwtService.generateRefreshToken(user);
+
+                return AuthenticationResponse.builder()
+                        .accessToken(accessToken)
+                        .refreshToken(newRefreshToken)
+                        .build();
+            }
+        }
+
+        throw new BusinessException(
+                ErrorCode.UNAUTHORIZED,
+                HttpStatus.UNAUTHORIZED,
+                "Invalid Refresh Token"
+        );
     }
 
     private String buildEmail(String name, String verificationCode) {

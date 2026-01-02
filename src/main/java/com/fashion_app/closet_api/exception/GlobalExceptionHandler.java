@@ -1,8 +1,13 @@
 package com.fashion_app.closet_api.exception;
 
+import io.jsonwebtoken.ExpiredJwtException;
+import io.jsonwebtoken.security.SignatureException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.client.HttpClientErrorException;
@@ -65,5 +70,60 @@ public class GlobalExceptionHandler {
         );
 
         return ResponseEntity.status(500).body(error);
+    }
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiError> handleBadCredentials(
+            BadCredentialsException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("Authentication failed: {}", ex.getMessage());
+
+        ApiError error = new ApiError(
+                "BAD_CREDENTIALS",
+                "Invalid email or password",
+                HttpStatus.UNAUTHORIZED.value(), // 401
+                request.getRequestURI(),
+                Instant.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(error);
+    }
+
+    // 2. Handle JWT Specific Errors (Expired or Tampered token)
+    @ExceptionHandler({ExpiredJwtException.class, SignatureException.class})
+    public ResponseEntity<ApiError> handleJwtException(
+            Exception ex,
+            HttpServletRequest request
+    ) {
+        log.warn("JWT Error: {}", ex.getMessage());
+
+        ApiError error = new ApiError(
+                "INVALID_TOKEN",
+                "Token has expired or is invalid",
+                HttpStatus.FORBIDDEN.value(), // 403
+                request.getRequestURI(),
+                Instant.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.FORBIDDEN).body(error);
+    }
+
+    @ExceptionHandler(UsernameNotFoundException.class)
+    public ResponseEntity<ApiError> handleUserNotFound(
+            UsernameNotFoundException ex,
+            HttpServletRequest request
+    ) {
+        log.warn("User not found: {}", ex.getMessage());
+
+        ApiError error = new ApiError(
+                "USER_NOT_FOUND",
+                ex.getMessage(),
+                HttpStatus.NOT_FOUND.value(), // 404
+                request.getRequestURI(),
+                Instant.now()
+        );
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 }
