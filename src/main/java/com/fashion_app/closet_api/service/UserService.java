@@ -3,6 +3,7 @@ package com.fashion_app.closet_api.service;
 import com.fashion_app.closet_api.Entity.AuthProvider;
 import com.fashion_app.closet_api.Entity.User;
 import com.fashion_app.closet_api.Entity.UserRole;
+import com.fashion_app.closet_api.Repository.UserProfileRepository;
 import com.fashion_app.closet_api.Repository.UserRepository;
 import com.fashion_app.closet_api.dto.AuthenticationResponse;
 import com.fashion_app.closet_api.dto.UserLoginRequest;
@@ -34,6 +35,7 @@ public class UserService {
     private final EmailService emailService;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final UserProfileRepository userProfileRepository;
 
     @Transactional
     public void signUp(UserRegisterRequest requestInput) {
@@ -166,6 +168,8 @@ public class UserService {
             var user = userRepository.findByEmail(userEmail)
                     .orElseThrow(() -> new UsernameNotFoundException("User not found"));
 
+            boolean profileExists = userProfileRepository.existsByUserId(user.getId());
+
             if (jwtService.isTokenValid(refreshToken, user)) {
                 var accessToken = jwtService.generateToken(user);
                 var newRefreshToken = jwtService.generateRefreshToken(user);
@@ -173,6 +177,7 @@ public class UserService {
                 return AuthenticationResponse.builder()
                         .accessToken(accessToken)
                         .refreshToken(newRefreshToken)
+                        .isProfileComplete(profileExists)
                         .build();
             }
         }

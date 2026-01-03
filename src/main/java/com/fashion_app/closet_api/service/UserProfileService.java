@@ -22,7 +22,7 @@ public class UserProfileService {
     private final FileStorageService fileStorageService;
 
     @Transactional
-    public UserProfileResponse createProfile(User user, MultipartFile bodyImage, List<Map<String, Object>> stylePreferences) {
+    public UserProfileResponse createProfile(User user, MultipartFile bodyImage, String bodyShape, List<Map<String, Object>> stylePreferences) {
         if (userProfileRepository.findByUserId(user.getId()).isPresent()) {
             throw new BusinessException(
                     ErrorCode.INVALID_REQUEST,
@@ -31,13 +31,22 @@ public class UserProfileService {
             );
         }
 
-        validateImage(bodyImage);
+        String imageKey;
 
-        String imageUrl = fileStorageService.saveFile(bodyImage, "user-profiles");
+        if (bodyImage != null && !bodyImage.isEmpty()) {
+            validateImage(bodyImage);
+            imageKey = fileStorageService.uploadFile(bodyImage);
+        }
+        else if (bodyImage != null && !bodyImage.isEmpty()) {
+            imageKey = "defaults/" + bodyShape.toLowerCase() + ".jpg"; // Replace with a default image of your choice
+        }
+        else {
+            throw new BusinessException(ErrorCode.INVALID_REQUEST, HttpStatus.BAD_REQUEST, "Please upload a photo OR select a body shape.");
+        }
 
         UserProfile profile = UserProfile.builder()
                 .user(user)
-                .bodyShapeImageUrl(imageUrl)
+                .bodyShapeImageKey(imageKey)
                 .stylePreferences(stylePreferences)
                 .build();
 
@@ -46,7 +55,7 @@ public class UserProfileService {
     }
 
     @Transactional
-    public UserProfileResponse updateProfile(User user, MultipartFile bodyImage, List<Map<String, Object>> preferences) {
+    public UserProfileResponse updateProfile(User user, MultipartFile bodyImage, String bodyShape, List<Map<String, Object>> preferences) {
         UserProfile profile = userProfileRepository.findByUserId(user.getId())
                 .orElseThrow(() -> new BusinessException(
                         ErrorCode.INVALID_REQUEST,
@@ -54,11 +63,24 @@ public class UserProfileService {
                         "Profile not found. Please create one first."
                 ));
 
+        // Note: bodyShape is the defaults
 
-        if (bodyImage != null && !bodyImage.isEmpty()) {
-            validateImage(bodyImage);
-            String newImageUrl = fileStorageService.saveFile(bodyImage, "user-profiles");
-            profile.setBodyShapeImageUrl(newImageUrl);
+        boolean isNewImage = (bodyImage != null && !bodyImage.isEmpty());
+        boolean isNewShape = (bodyShape != null && !bodyShape.isEmpty());
+
+        if (isNewImage || isNewShape) {
+            String oldKey = profile.getBodyShapeImageKey();
+            if (oldKey != null && !oldKey.startsWith("defaults/")) {
+                fileStorageService.deleteFile(oldKey);
+            }
+
+            if (isNewImage) {
+                validateImage(bodyImage);
+                String newKey = fileStorageService.uploadFile(bodyImage);
+                profile.setBodyShapeImageKey(newKey);
+            } else {
+                profile.setBodyShapeImageKey("defaults/" + bodyShape.toLowerCase() + ".jpg");
+            }
         }
 
         if (preferences != null && !preferences.isEmpty()) {
@@ -98,9 +120,49 @@ public class UserProfileService {
         }
     }
 
+//    @Transactional
+//    public void removeBodyShapeImage(User user) {
+//        UserProfile profile = userProfileRepository.findByUserId(user.getId())
+//                .orElseThrow(() -> new BusinessException(
+//                        ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND, "Profile not found"
+//                ));
+//
+//        String currentKey = profile.getBodyShapeImageKey();
+//
+//        if (currentKey != null && !currentKey.isEmpty()) {
+//            fileStorageService.deleteFile(currentKey); // <--- Actual Cloud Delete
+//        }
+//
+//        profile.setBodyShapeImageKey(null);
+//        userProfileRepository.save(profile);
+//    }
+
+//    @Transactional
+//    public void deleteProfile(User user) {
+//        UserProfile profile = userProfileRepository.findByUserId(user.getId())
+//                .orElseThrow(() -> new BusinessException(
+//                        ErrorCode.USER_NOT_FOUND,
+//                        HttpStatus.NOT_FOUND,
+//                        "User profile not set up."
+//                ));
+//        String key = profile.getBodyShapeImageKey();
+//        if (key != null && !key.isEmpty()) {
+//            fileStorageService.deleteFile(key);
+//        }
+//        userProfileRepository.delete(profile);
+//    }
+
     private UserProfileResponse mapToResponse(UserProfile profile) {
+        String key = profile.getBodyShapeImageKey();
+
+        String generatedUrl = null;
+        if (key != null && !key.isEmpty()) {
+            generatedUrl = fileStorageService.getFileUrl(key);
+        }
+
         return UserProfileResponse.builder()
-                .bodyShapeImageUrl(profile.getBodyShapeImageUrl())
+                .bodyShapeImageKey(key)
+                .bodyShapeImageUrl(generatedUrl)
                 .stylePreferences(profile.getStylePreferences())
                 .build();
     }

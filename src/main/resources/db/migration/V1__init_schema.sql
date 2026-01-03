@@ -19,7 +19,7 @@ CREATE TABLE users (
 CREATE TABLE user_profiles (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
-    body_shape_image_url VARCHAR(500) NOT NULL,
+    body_shape_image_key VARCHAR(500) NOT NULL,
     style_preferences JSONB
 );
 

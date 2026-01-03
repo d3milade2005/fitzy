@@ -24,10 +24,11 @@ public class UserProfileController {
     @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<UserProfileResponse> createProfile(
             @AuthenticationPrincipal User user,
-            @RequestPart("image") MultipartFile image,
+            @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "bodyShape", required = false) String bodyShape,
             @RequestPart("preferences") List<Map<String, Object>> preferences
     ) {
-        UserProfileResponse response = userProfileService.createProfile(user, image, preferences);
+        UserProfileResponse response = userProfileService.createProfile(user, image, bodyShape, preferences);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
@@ -35,9 +36,10 @@ public class UserProfileController {
     public ResponseEntity<UserProfileResponse> updateProfile(
             @AuthenticationPrincipal User user,
             @RequestPart(value = "image", required = false) MultipartFile image,
+            @RequestPart(value = "bodyShape", required = false) String bodyShape,
             @RequestPart(value = "preferences", required = false) List<Map<String, Object>> preferences
     ) {
-        UserProfileResponse response = userProfileService.updateProfile(user, image, preferences);
+        UserProfileResponse response = userProfileService.updateProfile(user, image, bodyShape, preferences);
         return ResponseEntity.ok(response);
     }
 
@@ -45,4 +47,15 @@ public class UserProfileController {
     public ResponseEntity<UserProfileResponse> getProfile(@AuthenticationPrincipal User user) {
         return ResponseEntity.ok(userProfileService.getProfile(user));
     }
+
+//    @DeleteMapping
+//    public void deleteProfile(@AuthenticationPrincipal User user) {
+//        userProfileService.deleteProfile(user);
+//    }
+
+//    @DeleteMapping("/image")
+//    public ResponseEntity<Void> deleteBodyShapeImage(@AuthenticationPrincipal User user) {
+//        userProfileService.removeBodyShapeImage(user);
+//        return ResponseEntity.noContent().build();
+//    }
 }

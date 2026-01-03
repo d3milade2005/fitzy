@@ -28,8 +28,8 @@ public class UserProfile {
     @JsonIgnore
     private User user;
 
-    @Column(name = "body_shape_image_url", nullable = false)
-    private String bodyShapeImageUrl;
+    @Column(name = "body_shape_image_key", nullable = false)
+    private String bodyShapeImageKey;
 
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "style_preferences", columnDefinition = "jsonb")

@@ -9,6 +9,7 @@ import java.util.Map;
 @Data
 @Builder
 public class UserProfileResponse {
+    private String bodyShapeImageKey;
     private String bodyShapeImageUrl;
     private List<Map<String, Object>> stylePreferences;
 }
