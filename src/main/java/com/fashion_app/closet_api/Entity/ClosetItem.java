@@ -26,7 +26,7 @@ public class ClosetItem {
     private User user;
 
     @Column(nullable = false)
-    private String imageUrl;
+    private String imageKey;
 
     @Enumerated(EnumType.STRING)
     private Category category;

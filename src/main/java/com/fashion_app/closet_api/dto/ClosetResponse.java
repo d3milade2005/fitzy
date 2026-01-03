@@ -11,6 +11,7 @@ import java.time.LocalDateTime;
 @Builder
 public class ClosetResponse {
     private Long id;
+    private String imageKey;
     private String imageUrl;
     private Category category;
     private Season season;

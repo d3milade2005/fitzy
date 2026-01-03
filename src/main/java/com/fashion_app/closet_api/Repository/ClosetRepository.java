@@ -8,13 +8,11 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 
 @Repository
 public interface ClosetRepository extends JpaRepository<ClosetItem, Long> {
     Page<ClosetItem> findAllByUserId(UUID userId, Pageable pageable);
     Page<ClosetItem> findAllByUserIdAndCategory(UUID userId, Category category, Pageable pageable);
-    Page<ClosetItem> findAllByUserIdAndDetectedSeason(UUID userId, Season season, Pageable pageable);
+    Page<ClosetItem> findAllByUserIdAndSeason(UUID userId, Season season, Pageable pageable);
 }

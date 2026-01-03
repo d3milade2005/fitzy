@@ -6,6 +6,7 @@ import com.fashion_app.closet_api.Repository.UserProfileRepository;
 import com.fashion_app.closet_api.dto.UserProfileResponse;
 import com.fashion_app.closet_api.exception.BusinessException;
 import com.fashion_app.closet_api.exception.ErrorCode;
+import com.fashion_app.closet_api.util.FileValidator;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -20,6 +21,7 @@ import java.util.Map;
 public class UserProfileService {
     private final UserProfileRepository userProfileRepository;
     private final FileStorageService fileStorageService;
+    private final FileValidator fileValidator;
 
     @Transactional
     public UserProfileResponse createProfile(User user, MultipartFile bodyImage, String bodyShape, List<Map<String, Object>> stylePreferences) {
@@ -34,7 +36,7 @@ public class UserProfileService {
         String imageKey;
 
         if (bodyImage != null && !bodyImage.isEmpty()) {
-            validateImage(bodyImage);
+            fileValidator.validateImage(bodyImage);
             imageKey = fileStorageService.uploadFile(bodyImage);
         }
         else if (bodyImage != null && !bodyImage.isEmpty()) {
@@ -75,7 +77,7 @@ public class UserProfileService {
             }
 
             if (isNewImage) {
-                validateImage(bodyImage);
+                fileValidator.validateImage(bodyImage);
                 String newKey = fileStorageService.uploadFile(bodyImage);
                 profile.setBodyShapeImageKey(newKey);
             } else {
@@ -100,24 +102,6 @@ public class UserProfileService {
                 ));
 
         return mapToResponse(profile);
-    }
-
-    private void validateImage(MultipartFile file) {
-        if (file == null || file.isEmpty()) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_REQUEST,
-                    HttpStatus.BAD_REQUEST,
-                    "Body reference image is required."
-            );
-        }
-        String contentType = file.getContentType();
-        if (contentType == null || !contentType.startsWith("image/")) {
-            throw new BusinessException(
-                    ErrorCode.INVALID_REQUEST,
-                    HttpStatus.BAD_REQUEST,
-                    "File must be an image."
-            );
-        }
     }
 
 //    @Transactional

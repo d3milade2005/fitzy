@@ -26,7 +26,7 @@ CREATE TABLE user_profiles (
 CREATE TABLE closet_items (
     id BIGSERIAL PRIMARY KEY,
     user_id UUID REFERENCES users(id) ON DELETE CASCADE,
-    image_url VARCHAR(500) NOT NULL,
+    image_key VARCHAR(500) NOT NULL,
     category VARCHAR(50),
     season VARCHAR(50),
     ai_description TEXT,
