@@ -31,9 +31,12 @@ public class UserController {
     }
 
     @PostMapping("/verify")
-    public ResponseEntity<String> verifyUser(@RequestParam("verificationCode") String verificationCode) {
+    public ResponseEntity<Map<String, Object>> verifyUser(@RequestParam("verificationCode") String verificationCode) {
         userService.verifyUser(verificationCode);
-        return ResponseEntity.ok("User verified successfully");
+        Map<String, Object> response = Map.of(
+                "message", "User verified successfully"
+        );
+        return ResponseEntity.ok(response);
     }
 
     @PostMapping("/login")
@@ -42,9 +45,12 @@ public class UserController {
     }
 
     @PostMapping("/resend")
-    public ResponseEntity<String> resendVerificationCode(@RequestParam("email") String email) {
+    public ResponseEntity<Map<String, Object>> resendVerificationCode(@RequestParam("email") String email) {
         userService.resendVerificationCode(email);
-        return ResponseEntity.ok("Verification code sent successfully");
+        Map<String, Object> response = Map.of(
+                "message", "Verification code sent successfully"
+        );
+        return ResponseEntity.ok(response);
     }
 
     @GetMapping("/profile")

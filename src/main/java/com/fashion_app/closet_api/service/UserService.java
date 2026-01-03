@@ -18,6 +18,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
@@ -34,13 +35,21 @@ public class UserService {
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
 
-
+    @Transactional
     public void signUp(UserRegisterRequest requestInput) {
         if (!emailValidator.isValidEmail(requestInput.getEmail())) {
-            throw new IllegalArgumentException("Invalid email format");
+            throw new BusinessException(
+                    ErrorCode.INVALID_EMAIL_FORMAT,
+                    HttpStatus.BAD_REQUEST,
+                    "Invalid email format"
+            );
         }
         if (userRepository.findByEmail(requestInput.getEmail()).isPresent()) {
-            throw new IllegalArgumentException("Email is already in use");
+            throw new BusinessException(
+                    ErrorCode.EMAIL_ALREADY_EXISTS,
+                    HttpStatus.CONFLICT,
+                    "Email is already in use"
+            );
         }
 
         String encodedPassword = bCryptPasswordEncoder.encode(requestInput.getPassword());
@@ -62,9 +71,17 @@ public class UserService {
 
     public void verifyUser(String verificationCode) {
         User user = userRepository.findByVerificationCode(verificationCode)
-                .orElseThrow(() -> new IllegalArgumentException("Invalid verification code"));
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.INVALID_VERIFICATION_CODE,
+                        HttpStatus.BAD_REQUEST,
+                        "Invalid verification code"
+                ));
         if (user.getVerificationCodeExpiresAt().isBefore(LocalDateTime.now())) {
-            throw new IllegalArgumentException("Verification code has expired");
+            throw new BusinessException(
+                    ErrorCode.VERIFICATION_CODE_EXPIRED,
+                    HttpStatus.BAD_REQUEST,
+                    "Verification code has expired"
+            );
         }
         user.setVerificationCode(null);
         user.setVerificationCodeExpiresAt(null);
@@ -73,20 +90,24 @@ public class UserService {
     }
 
     public void resendVerificationCode(String email) {
-        Optional<User> optionalUser = userRepository.findByEmail(email);
-        if (optionalUser.isPresent()) {
-            User user = optionalUser.get();
-            if (user.isEnabled()) {
-                throw new RuntimeException("Account is already verified");
-            }
-            String verificationCode = generateVerificationCode();
-            user.setVerificationCode(verificationCode);
-            user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
-            emailService.sendNotification(user.getEmail(), buildEmail(user.getFirstName(), verificationCode));
-            userRepository.save(user);
-        } else {
-            throw new RuntimeException("User not found");
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.USER_NOT_FOUND,
+                        HttpStatus.NOT_FOUND,
+                        "User not found"
+                ));
+        if (user.isEnabled()) {
+            throw new BusinessException(
+                    ErrorCode.ACCOUNT_ALREADY_VERIFIED,
+                    HttpStatus.CONFLICT,
+                    "Account is already verified"
+            );
         }
+        String verificationCode = generateVerificationCode();
+        user.setVerificationCode(verificationCode);
+        user.setVerificationCodeExpiresAt(LocalDateTime.now().plusMinutes(15));
+        emailService.sendNotification(user.getEmail(), buildEmail(user.getFirstName(), verificationCode));
+        userRepository.save(user);
     }
 
     public String generateVerificationCode() {
@@ -97,9 +118,17 @@ public class UserService {
 
     public AuthenticationResponse login(UserLoginRequest requestInput) {
         User user = userRepository.findByEmail(requestInput.getEmail())
-                .orElseThrow(() -> new UsernameNotFoundException("User not found with email : " + requestInput.getEmail()));
+                .orElseThrow(() -> new BusinessException(
+                    ErrorCode.USER_NOT_FOUND,
+                    HttpStatus.NOT_FOUND,
+                    "User not found with email: " + requestInput.getEmail()
+                ));
         if (!user.isEnabled()){
-            throw new RuntimeException("Account is not verified");
+            throw new BusinessException(
+                    ErrorCode.ACCOUNT_NOT_VERIFIED,
+                    HttpStatus.FORBIDDEN,
+                    "Account is not verified"
+            );
         }
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(requestInput.getEmail(), requestInput.getPassword())
