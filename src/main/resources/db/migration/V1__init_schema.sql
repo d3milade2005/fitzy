@@ -8,9 +8,6 @@ CREATE TABLE users (
     password VARCHAR(255),
     role VARCHAR(50) NOT NULL DEFAULT 'USER',
     auth_provider VARCHAR(50) NOT NULL DEFAULT 'LOCAL',
-    is_profile_complete BOOLEAN NOT NULL DEFAULT FALSE,
-    location_city VARCHAR(255),
-    preferences JSONB,
     google_refresh_token TEXT,
     verification_code VARCHAR(255),
     verification_code_expiry TIMESTAMP,
@@ -18,3 +15,22 @@ CREATE TABLE users (
     created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+CREATE TABLE user_profiles (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID UNIQUE REFERENCES users(id) ON DELETE CASCADE,
+    body_shape_image_url VARCHAR(500) NOT NULL,
+    style_preferences JSONB
+);
+
+CREATE TABLE closet_items (
+    id BIGSERIAL PRIMARY KEY,
+    user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+    image_url VARCHAR(500) NOT NULL,
+    category VARCHAR(50),
+    season VARCHAR(50),
+    ai_description TEXT,
+    uploaded_at TIMESTAMP DEFAULT NOW()
+);
+
+CREATE INDEX idx_closet_items_user_id ON closet_items(user_id);

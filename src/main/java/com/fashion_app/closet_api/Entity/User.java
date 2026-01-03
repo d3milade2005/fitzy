@@ -51,17 +51,6 @@ public class User implements UserDetails {
     @Builder.Default
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
-    @Column(name = "is_profile_complete", nullable = false)
-    @Builder.Default
-    private boolean isProfileComplete = false;
-
-    @Column(name = "location_city")
-    private String locationCity;
-
-    @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "preferences", columnDefinition = "jsonb")
-    private Map<String, Object> preferences;
-
     @Column(name = "google_refresh_token")
     private String googleRefreshToken;
 
