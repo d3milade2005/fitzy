@@ -51,8 +51,15 @@ public class User implements UserDetails {
     @Builder.Default
     private AuthProvider authProvider = AuthProvider.LOCAL;
 
+    @Column(name = "google_access_token")
+    private String googleAccessToken;
+
     @Column(name = "google_refresh_token")
     private String googleRefreshToken;
+
+    @Column(name = "google_token_expiry")
+    private LocalDateTime googleTokenExpiry;
+
 
     @Column(name = "verification_code")
     private String verificationCode;
