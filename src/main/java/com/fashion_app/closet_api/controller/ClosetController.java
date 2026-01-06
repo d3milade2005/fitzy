@@ -13,6 +13,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
+import java.util.UUID;
 
 @RestController
 @RequestMapping("/api/v1/closet")
@@ -40,4 +41,11 @@ public class ClosetController {
         Page<ClosetResponse> closetPage = closetService.getUserItems(user, category, page, size);
         return ResponseEntity.ok(closetPage);
     }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOutfit(@PathVariable Long id, @AuthenticationPrincipal User user) {
+        closetService.deleteItem(id, user);
+        return ResponseEntity.noContent().build();
+    }
+
 }

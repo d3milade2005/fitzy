@@ -29,7 +29,7 @@ public class CalendarController {
     @GetMapping("/callback")
     public ResponseEntity<String> handleGoogleCallback(
             @RequestParam("code") String code,
-            @RequestParam("state") String stateUserId) { // google sends back the UserID we sent
+            @RequestParam("state") String stateUserId) {
         try {
             googleAuthService.linkGoogleAccount(code, stateUserId);
             return ResponseEntity.ok("Google Calendar successfully connected! You may close this tab.");

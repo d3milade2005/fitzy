@@ -2,6 +2,7 @@ package com.fashion_app.closet_api.exception;
 
 public enum ErrorCode {
     USER_NOT_FOUND,
+    OUTFIT_NOT_FOUND,
     UNAUTHORIZED,
     EMPTY_WARDROBE,
     INVALID_REQUEST,

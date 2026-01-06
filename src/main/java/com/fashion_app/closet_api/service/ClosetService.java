@@ -9,6 +9,7 @@ import com.fashion_app.closet_api.exception.BusinessException;
 import com.fashion_app.closet_api.exception.ErrorCode;
 import com.fashion_app.closet_api.util.FileValidator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -22,17 +23,18 @@ import java.time.LocalDateTime;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class ClosetService {
     private final ClosetRepository closetRepository;
     private final FileStorageService fileStorageService;
-    private final FileValidator finalValidator;
+    private final FileValidator fileValidator;
 
     @Transactional
     public ClosetResponse addItem(User user, MultipartFile image, String category) {
         if (image == null || image.isEmpty()) {
             throw new BusinessException(ErrorCode.INVALID_REQUEST, HttpStatus.BAD_REQUEST, "Image is required");
         }
-        finalValidator.validateImage(image);
+        fileValidator.validateImage(image);
 
         String imageKey = fileStorageService.uploadFile(image);
 
@@ -59,6 +61,28 @@ public class ClosetService {
             itemPage = closetRepository.findAllByUserId(user.getId(), pageable);
         }
         return itemPage.map(this::mapToResponse);
+    }
+
+    @Transactional
+    public void deleteItem(Long id, User user) {
+        ClosetItem item = closetRepository.findById(id)
+                .orElseThrow(() -> new BusinessException(
+                        ErrorCode.OUTFIT_NOT_FOUND,
+                        HttpStatus.NOT_FOUND,
+                        "Outfit not found"
+                ));
+
+        if (!item.getUser().equals(user)) {
+            throw new BusinessException(ErrorCode.UNAUTHORIZED, HttpStatus.UNAUTHORIZED, "You are not authorized to delete this outfit");
+        }
+
+        String ImageKey = item.getImageKey();
+        try {
+            closetRepository.deleteById(id);
+            fileStorageService.deleteFile(ImageKey);
+        } catch (Exception e) {
+            log.error("Error deleting outfit: {}", e.getMessage());
+        }
     }
 
     private ClosetResponse mapToResponse(ClosetItem item) {
