@@ -1,11 +1,15 @@
 package com.fashion_app.closet_api.service;
 
+import com.fashion_app.closet_api.exception.BusinessException;
+import com.fashion_app.closet_api.exception.ErrorCode;
+import com.google.cloud.storage.Blob;
 import com.google.cloud.storage.BlobId;
 import com.google.cloud.storage.BlobInfo;
 import com.google.cloud.storage.Storage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -43,7 +47,7 @@ public class GcsFileStorageService implements FileStorageService{
 
         try {
             storage.create(blobInfo, file.getBytes());
-            return fileName;
+            return fileName; // Return the media link: Blob blob = storage.create(...); blob.getMediaLink OR String.format("https://storage.googleapis.com/%s/%s", bucketName, fileName);
         } catch (IOException e) {
             throw new RuntimeException("Failed to read file input stream", e);
         } catch (Exception e) {
@@ -70,6 +74,14 @@ public class GcsFileStorageService implements FileStorageService{
 
         return signedUrl.toString();
     }
+
+//    public byte[] downloadFile(String bucketName, String fileName) {
+//        Blob blob = storage.get(BlobId.of(bucketName, fileName));
+//        if (blob == null) {
+//            throw new BusinessException(ErrorCode.FILE_NOT_FOUND, HttpStatus.NOT_FOUND, "File not found in bucket: " + fileName);
+//        }
+//        return blob.getContent();
+//    }
 
     public void deleteFile(String key) {
         if (key == null || key.isEmpty()) {

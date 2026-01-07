@@ -57,7 +57,7 @@ public class FileStorageConfig {
     @Bean
     public Storage storage() throws IOException {
         GoogleCredentials credentials = GoogleCredentials.fromStream(credentialsResource.getInputStream());
-
+        //Initiaize GCS client with credentials
         return StorageOptions.newBuilder()
                 .setProjectId(projectId)
                 .setCredentials(credentials)
