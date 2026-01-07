@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 @Builder
 public class OutfitItemData {
-    private Long id;
+    private Long itemId;
     private int layerOrder;
     private String transformData;
 }
