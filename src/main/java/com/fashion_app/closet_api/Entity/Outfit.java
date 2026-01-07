@@ -27,6 +27,7 @@ public class Outfit {
     @JoinColumn(name = "user_id")
     private User user;
 
+    @Column(unique = true, nullable = false)
     private String outfitLink;
 
     @OneToMany(
@@ -35,6 +36,15 @@ public class Outfit {
             orphanRemoval = true
     )
     private Set<OutfitItem> outfitItems = new HashSet<>();
+
+    @Column(nullable = true)
+    private String googleEventId;
+
+    @Column(nullable = true)
+    private LocalDateTime eventStart;
+
+    @Column(nullable = true)
+    private LocalDateTime eventEnd;
 
     private LocalDateTime createdAt;
 }

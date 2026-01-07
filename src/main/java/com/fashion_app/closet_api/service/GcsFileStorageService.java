@@ -30,10 +30,6 @@ public class GcsFileStorageService implements FileStorageService{
 
     @Override
     public String uploadFile(MultipartFile file) {
-        if (file.isEmpty()) {
-            throw new RuntimeException("Cannot upload empty file");
-        }
-
         String originalFilename = file.getOriginalFilename();
         String extension = originalFilename != null && originalFilename.contains(".")
                 ? originalFilename.substring(originalFilename.lastIndexOf("."))

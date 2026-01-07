@@ -22,14 +22,14 @@ public class OutfitController {
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> saveOutfit(@AuthenticationPrincipal User user, @RequestBody OutfitRequest request) {
-        String outfitLink = outfitService.saveOutfit(request);
+        String outfitLink = outfitService.saveOutfit(user, request);
         Map<String, Object> response = Map.of("message", "Outfit saved successfully", "outfitLink", outfitLink);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 
     @GetMapping
-    public ResponseEntity<Map<String, Object>> getOutfit(@RequestParam("outfitLink") String outfitLink) {
-        OutfitResponse outfit = outfitService.getOutfit(outfitLink);
+    public ResponseEntity<Map<String, Object>> getOutfit(@AuthenticationPrincipal User user, @RequestParam("outfitLink") String outfitLink) {
+        OutfitResponse outfit = outfitService.getOutfit(user, outfitLink);
         Map<String, Object> response = Map.of("outfit", outfit);
         return ResponseEntity.ok(response);
     }

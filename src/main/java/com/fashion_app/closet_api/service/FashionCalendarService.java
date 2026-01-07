@@ -1,12 +1,16 @@
 package com.fashion_app.closet_api.service;
 
+import com.fashion_app.closet_api.Entity.Outfit;
+import com.fashion_app.closet_api.Entity.OutfitItem;
 import com.fashion_app.closet_api.Entity.User;
+import com.fashion_app.closet_api.Repository.OutfitRepository;
 import com.fashion_app.closet_api.Repository.UserRepository;
 import com.fashion_app.closet_api.exception.BusinessException;
 import com.fashion_app.closet_api.exception.ErrorCode;
 import com.google.api.client.util.DateTime;
 import com.google.api.services.calendar.Calendar;
 import com.google.api.services.calendar.model.Event;
+import com.google.api.services.calendar.model.EventDateTime;
 import com.google.api.services.calendar.model.Events;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -14,7 +18,11 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 
 @Service
@@ -24,6 +32,8 @@ public class FashionCalendarService {
     private final GoogleAuthService authService;
     private final UserRepository userRepository;
     private final WeatherService weatherService;
+    private final OutfitService outfitService;
+    private final OutfitRepository outfitRepository;
 
     @Transactional
     public void generateOutfitsForUser(UUID userId) {
@@ -67,7 +77,7 @@ public class FashionCalendarService {
 
             int styledCount = 0;
             for (Event event : items) {
-                if (processEvent(calendarClient, event)) {
+                if (processEvent(calendarClient, event, user)) {
                     styledCount++;
                 }
             }
@@ -79,7 +89,7 @@ public class FashionCalendarService {
         }
     }
 
-    private boolean processEvent(Calendar service, Event event) {
+    private boolean processEvent(Calendar service, Event event, User user) {
         try {
             // Idempotency Check (don't style twice). Proper implementation will be need to be done here
             if (event.getDescription() != null && event.getDescription().contains("--- FASHION PLAN ---")) {
@@ -99,13 +109,26 @@ public class FashionCalendarService {
             }
 
             String outfitSuggestion = generateOutfit(event.getSummary(), weather);
+            Set<OutfitItem> outfitAiSuggestion = new HashSet<>();
+
+            Outfit outfit = new Outfit();
+            outfit.setName(event.getSummary());
+            outfit.setUser(user);
+            outfit.setOutfitLink(generateOutfitLink());
+            outfit.setOutfitItems(outfitAiSuggestion);
+            outfit.setGoogleEventId(event.getId());
+            outfit.setEventStart(toLocalDateTime(event.getStart()));
+            outfit.setEventEnd(toLocalDateTime(event.getEnd()));
+            outfit.setCreatedAt(LocalDateTime.now());
+
+            outfitRepository.save(outfit);
 
             String originalDesc = (event.getDescription() == null) ? "" : event.getDescription();
             String newDesc = originalDesc +
                     "\n\n--- FASHION PLAN ---\n" +
                     "📍 Location: " + location + "\n" +
                     "🌤 Forecast: " + weather + "\n" +
-                    "👗 Suggestion: " + outfitSuggestion;
+                    "👗 Suggestion: " + outfit.getOutfitLink();
 
             event.setDescription(newDesc);
 
@@ -118,6 +141,23 @@ public class FashionCalendarService {
             return false;
         }
     }
+
+    private String generateOutfitLink() {
+        return UUID.randomUUID().toString();
+    }
+
+    private LocalDateTime toLocalDateTime(EventDateTime eventDateTime) {
+        if (eventDateTime == null) return null;
+
+        DateTime dt = eventDateTime.getDateTime() != null ? eventDateTime.getDateTime() : eventDateTime.getDate();
+        if (dt == null) return null;
+
+        return LocalDateTime.ofInstant(
+                java.time.Instant.ofEpochMilli(dt.getValue()),
+                ZoneId.systemDefault()
+        );
+    }
+
 
     // This will be replaced with the ai endpoint.
     private String generateOutfit(String summary, String weather) {

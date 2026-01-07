@@ -27,9 +27,18 @@ public class OutfitService {
     private final UserRepository userRepository;
     private final GcsFileStorageService fileStorageService;
 
-    public String saveOutfit(OutfitRequest request) {
+    public String saveOutfit(User authUser, OutfitRequest request) {
         User user = userRepository.findById(request.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND, "User not found"));
+
+        if (!authUser.getId().equals(user.getId())) {
+            throw new BusinessException(
+                    ErrorCode.UNAUTHORIZED,
+                    HttpStatus.UNAUTHORIZED,
+                    "You cannot create outfits for another user"
+            );
+        }
+
 
         Outfit outfit = new Outfit();
         outfit.setName(request.getName());
@@ -54,8 +63,8 @@ public class OutfitService {
         return outfit.getOutfitLink();
     }
 
-    public OutfitResponse getOutfit(String outfitLink) {
-        Outfit outfit = outfitRepository.findByOutfitLink(outfitLink)
+    public OutfitResponse getOutfit(User user, String outfitLink) {
+        Outfit outfit = outfitRepository.findByOutfitLinkAndUserId(outfitLink, user.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.OUTFIT_NOT_FOUND, HttpStatus.NOT_FOUND, "Full Outfit not found"));
         return mapToResponse(outfit);
     }
@@ -63,7 +72,7 @@ public class OutfitService {
     public List<OutfitSummary> getAllOutfit(User user) {
         return outfitRepository.findByUserId(user.getId())
                 .stream()
-                .map(o -> new OutfitSummary(o.getId(), o.getName()))
+                .map(o -> new OutfitSummary(o.getId(), o.getName(), o.getGoogleEventId()))
                 .toList();
     }
 
@@ -92,11 +101,18 @@ public class OutfitService {
                 })
                 .toList();
 
-        return OutfitResponse.builder()
+        OutfitResponse.OutfitResponseBuilder builder = OutfitResponse.builder()
                 .id(outfit.getId())
                 .name(outfit.getName())
-                .outfitItems(items)
-                .build();
+                .outfitItems(items);
+
+        if (outfit.getGoogleEventId() != null) {
+            builder.googleEventId(outfit.getGoogleEventId());
+            builder.eventStart(outfit.getEventStart());
+            builder.eventEnd(outfit.getEventEnd());
+        }
+
+        return builder.build();
     }
 
 

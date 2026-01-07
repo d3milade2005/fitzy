@@ -9,4 +9,5 @@ import java.util.UUID;
 public interface OutfitRepository extends JpaRepository<Outfit, Long> {
     Optional<Outfit> findByUserId(UUID userId);
     Optional<Outfit> findByOutfitLink(String outfitLink);
+    Optional<Outfit> findByOutfitLinkAndUserId(String outfitLink, UUID userId);
 }

@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class OutfitSummary {
     private Long id;
     private String name;
+    private String googleEventId;
 }
