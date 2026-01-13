@@ -9,7 +9,6 @@ import java.util.UUID;
 @Data
 @Builder
 public class OutfitRequest {
-    private UUID userId;
     private String name;
     private List<OutfitItemData> outfitItemData;
 }

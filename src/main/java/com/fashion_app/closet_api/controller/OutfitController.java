@@ -3,6 +3,7 @@ package com.fashion_app.closet_api.controller;
 import com.fashion_app.closet_api.Entity.User;
 import com.fashion_app.closet_api.dto.OutfitRequest;
 import com.fashion_app.closet_api.dto.OutfitResponse;
+import com.fashion_app.closet_api.dto.OutfitSummary;
 import com.fashion_app.closet_api.service.OutfitService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
@@ -22,8 +23,8 @@ public class OutfitController {
 
     @PostMapping
     public ResponseEntity<Map<String, Object>> saveOutfit(@AuthenticationPrincipal User user, @RequestBody OutfitRequest request) {
-        String outfitLink = outfitService.saveOutfit(user, request);
-        Map<String, Object> response = Map.of("message", "Outfit saved successfully", "outfitLink", outfitLink);
+        OutfitSummary outfitSummary = outfitService.saveOutfit(user, request);
+        Map<String, Object> response = Map.of("message", "Outfit saved successfully", "data", outfitSummary);
         return ResponseEntity.status(HttpStatus.CREATED).body(response);
     }
 

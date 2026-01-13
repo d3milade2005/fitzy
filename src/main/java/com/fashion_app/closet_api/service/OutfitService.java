@@ -27,18 +27,9 @@ public class OutfitService {
     private final UserRepository userRepository;
     private final GcsFileStorageService fileStorageService;
 
-    public String saveOutfit(User authUser, OutfitRequest request) {
-        User user = userRepository.findById(request.getUserId())
+    public OutfitSummary saveOutfit(User authUser, OutfitRequest request) {
+        User user = userRepository.findById(authUser.getId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.USER_NOT_FOUND, HttpStatus.NOT_FOUND, "User not found"));
-
-        if (!authUser.getId().equals(user.getId())) {
-            throw new BusinessException(
-                    ErrorCode.UNAUTHORIZED,
-                    HttpStatus.UNAUTHORIZED,
-                    "You cannot create outfits for another user"
-            );
-        }
-
 
         Outfit outfit = new Outfit();
         outfit.setName(request.getName());
@@ -60,7 +51,7 @@ public class OutfitService {
             outfit.getOutfitItems().add(outfitItem);
         }
         outfitRepository.save(outfit);
-        return outfit.getOutfitLink();
+        return new OutfitSummary(outfit.getId(), outfit.getName(), outfit.getDescription(), outfit.getGoogleEventId());
     }
 
     public OutfitResponse getOutfit(User user, String outfitLink) {
@@ -72,7 +63,7 @@ public class OutfitService {
     public List<OutfitSummary> getAllOutfit(User user) {
         return outfitRepository.findByUserId(user.getId())
                 .stream()
-                .map(o -> new OutfitSummary(o.getId(), o.getName(), o.getGoogleEventId()))
+                .map(o -> new OutfitSummary(o.getId(), o.getName(), o.getDescription(), o.getGoogleEventId()))
                 .toList();
     }
 
@@ -86,7 +77,6 @@ public class OutfitService {
                 ));
         outfitRepository.delete(outfit);
     }
-
 
     private OutfitResponse mapToResponse(Outfit outfit) {
         List<OutfitItemResponse> items = outfit.getOutfitItems()
