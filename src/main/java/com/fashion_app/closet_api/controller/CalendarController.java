@@ -38,8 +38,7 @@ public class CalendarController {
         }
     }
 
-    // This particular process has to be a background job. Tell user their calendar is being synced. Ran a job to do the processing and when done send a notification
-    // use celery, redis and fcm(firebase cloud messaging)
+    // coming soon: move this sync process to a background queue (like rabbitmq or celery) and notify the user via fcm when done so they aren't kept waiting here
     @PostMapping("/sync")
     public ResponseEntity<String> syncCalendar(Authentication authentication) {
         UUID userId = getCurrentUserId(authentication);

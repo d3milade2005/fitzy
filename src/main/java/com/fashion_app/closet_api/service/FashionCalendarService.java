@@ -60,7 +60,6 @@ public class FashionCalendarService {
 
             log.info("Fetching events for user {} from {} to {}", userId, now, nextWeek);
 
-            // Fetch Events
             Events events = calendarClient.events().list("primary")
                     .setTimeMin(now)
                     .setTimeMax(nextWeek)
@@ -91,8 +90,10 @@ public class FashionCalendarService {
 
     private boolean processEvent(Calendar service, Event event, User user) {
         try {
-            // Idempotency Check (don't style twice). Proper implementation will be need to be done here
-            if (event.getDescription() != null && event.getDescription().contains("--- FASHION PLAN ---")) {
+            // check if we already styled this event
+            if (event.getExtendedProperties() != null && 
+                event.getExtendedProperties().getPrivate() != null && 
+                "true".equals(event.getExtendedProperties().getPrivate().get("styledByFitzy"))) {
                 return false;
             }
 
@@ -132,6 +133,18 @@ public class FashionCalendarService {
 
             event.setDescription(newDesc);
 
+            Event.ExtendedProperties extendedProperties = event.getExtendedProperties();
+            if (extendedProperties == null) {
+                extendedProperties = new Event.ExtendedProperties();
+            }
+            java.util.Map<String, String> privateProps = extendedProperties.getPrivate();
+            if (privateProps == null) {
+                privateProps = new java.util.HashMap<>();
+            }
+            privateProps.put("styledByFitzy", "true");
+            extendedProperties.setPrivate(privateProps);
+            event.setExtendedProperties(extendedProperties);
+
             service.events().patch("primary", event.getId(), event).execute();
 
             return true;
@@ -159,7 +172,7 @@ public class FashionCalendarService {
     }
 
 
-    // This will be replaced with the ai endpoint.
+    // coming soon: integrate real ai engine to generate dynamic outfits based on user profile and weather
     private String generateOutfit(String summary, String weather) {
         String s = summary.toLowerCase();
         String w = weather.toLowerCase();

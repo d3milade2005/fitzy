@@ -1,6 +1,7 @@
 package com.fashion_app.closet_api.service;
 
 
+import com.fasterxml.jackson.databind.JsonNode;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -25,17 +26,24 @@ public class WeatherService {
                     .queryParam("units", "metric")
                     .toUriString();
 
-            // In a real app, you would parse the JSON response.
-            // For brevity, we return a mocked string if the call succeeds.
-            String response = restTemplate.getForObject(url, String.class);
+            JsonNode response = restTemplate.getForObject(url, JsonNode.class);
 
-            // TODO: Parse 'response' using Jackson/Gson to get description
-            // For now, let's assume if it didn't throw an error, it's sunny.
+            if (response != null && response.has("weather") && response.has("main")) {
+                JsonNode weatherArray = response.path("weather");
+                String desc = weatherArray.isEmpty() ? "Clear" : weatherArray.get(0).path("description").asText("Clear");
+                double temp = response.path("main").path("temp").asDouble(25.0);
+                
+                if (desc != null && !desc.isEmpty()) {
+                    desc = desc.substring(0, 1).toUpperCase() + desc.substring(1);
+                }
+                return String.format("%s, %.1f°C", desc, temp);
+            }
+
             return "Sunny, 25°C";
 
         } catch (Exception e) {
             log.error("Weather API failed for {}: {}", location, e.getMessage());
-            return "Weather unavailable"; // Fail gracefully
+            return "Weather unavailable";
         }
     }
 }
